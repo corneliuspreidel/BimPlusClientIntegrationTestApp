@@ -1,19 +1,17 @@
 import bimplus.api.ApiCore;
 import bimplus.api.Wrapper.*;
 import bimplus.data.*;
-import sun.misc.IOUtils;
+
+import org.apache.commons.io.IOUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.List;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
-import java.beans.PropertyChangeSupport;
 import java.io.*;
-import java.nio.file.CopyOption;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
-import java.util.*;
 
 /**
  * Created by Cornelius on 04.08.2016.
@@ -33,6 +31,8 @@ public class MainWindow
     private AttachmentsList attachmentsList;
     private IssuesList issuesList;
     private DtoTeam selectedTeam;
+
+    private static final Logger LOG = LoggerFactory.getLogger(MainWindow.class);
 
     public MainWindow()
     {
@@ -129,28 +129,21 @@ public class MainWindow
                         DtoAttachment selectedAttachment = (DtoAttachment) propertyChangeEvent.getNewValue();
                         InputStream stream = attachmentAPI.DownloadAttachment(selectedAttachment.GetId());
 
-                        if (stream != null) {
+                        try
+                        {
+                            byte[] bytes = IOUtils.toByteArray(stream);
                             JFileChooser chooser = new JFileChooser();
                             int returnVal = chooser.showSaveDialog(chooser);
                             File file = chooser.getSelectedFile();
 
-                            OutputStream outputStream = null;
-                            try {
-                                outputStream = new FileOutputStream(file);
-                            } catch (FileNotFoundException e) {
-                                e.printStackTrace();
-                            }
-                            try {
-                                org.apache.commons.io.IOUtils.copy(stream, outputStream);
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
-                            try {
-                                outputStream.close();
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
-
+                            FileOutputStream fos = new FileOutputStream(file);
+                            fos.write(bytes);
+                            fos.flush();
+                            fos.close();
+                        }
+                        catch (IOException e)
+                        {
+                            LOG.error(e.getMessage(), e);
                         }
                     }
                 }
